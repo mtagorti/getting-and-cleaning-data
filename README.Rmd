@@ -1,10 +1,19 @@
-##Part1: First step collecting the primary data after doing the experiments
+---
+title: "Project"
+author: "m.tagorti"
+date: "8 juin 2017"
+output: word_document
+---
+This project describes the experiments that have been carried out with a group of 30 volunteers. Each person performed 6 activities (walking, walking_upstairs, walking_downstairs, sitting, standing, laying) wearing a smartphone (Samsung Galaxy S II) on the waist. Using its embedded accelerometer and gyroscope, they captured 3-axial(X,Y,Z) linear acceleration(Body_acc, Body-Gyro, Total_acc) and 3-axial angular velocity. We summarize in the following dataframe all the collected data contained in "Inertial Signals" from both the "test" and "train" files, for each subject and performed activity.
+```{r, include=TRUE}
+library(plyr)
+library(dplyr)
 directory1<-"C:/Users/HP/downloads/getdata_projectfiles_UCI HAR Dataset/UCI HAR Dataset/test/Inertial Signals"#setting directory
 directory2<-"C:/Users/HP/downloads/getdata_projectfiles_UCI HAR Dataset/UCI HAR Dataset/train/Inertial Signals"
 files_list1<-list.files(directory1, full.names =TRUE)#listing files
 data1<-list()#putting all files into a list
 for (i in 1:length(files_list1)) {
-        data1[[i+2]] <- tbl_df(read.table(files_list1[i]))#loops through the files, rbinding them together
+data1[[i+2]] <- tbl_df(read.table(files_list1[i]))#loops through the files, rbinding them together
 }
 data1[[2]]<-tbl_df(read.table("C:/Users/HP/downloads/getdata_projectfiles_UCI HAR Dataset/UCI HAR Dataset/test/y_test.txt"))#adding the subject column
 data1[[1]]<-tbl_df(read.table("C:/Users/HP/downloads/getdata_projectfiles_UCI HAR Dataset/UCI HAR Dataset/test/subject_test.txt"))#adding the activity column
@@ -13,7 +22,7 @@ dataframe_test<-cbind.data.frame(data1)# collecting all the datas
 files_list2 <- list.files(directory2, full.names =TRUE)   #creates a list of files
 data2<-list()
 for (i in 1:length(files_list2)) {
-        data2[[i+2]] <- tbl_df(read.table(files_list2[i]))#loops through the files, rbinding them together
+data2[[i+2]] <- tbl_df(read.table(files_list2[i]))#loops through the files, rbinding them together
 }
 
 data2[[2]]<-tbl_df(read.table("C:/Users/HP/downloads/getdata_projectfiles_UCI HAR Dataset/UCI HAR Dataset/train/y_train.txt"))
@@ -21,14 +30,24 @@ data2[[1]]<-tbl_df(read.table("C:/Users/HP/downloads/getdata_projectfiles_UCI HA
 dataframe_train<-cbind.data.frame(data2)
 dataframe_final<-rbind.data.frame(dataframe_train,dataframe_test)# collecting both train and test datas
 names(dataframe_final)<-c("subject","activity",paste(replicate(128,"Body_acc_X"),1:128, sep=""),
-                          paste(replicate(128,"Body_acc_Y"),1:128, sep=""),paste(replicate(128,"Body_acc_Z"),1:128, sep=""),
-                          paste(replicate(128,"Body_gyro_X"),1:128, sep=""),paste(replicate(128,"Body_gyro_Y"),1:128, sep=""),
-                          paste(replicate(128,"Body_gyro_Z"),1:128, sep=""),paste(replicate(128,"Total_acc_X"),1:128, sep=""),
-                          paste(replicate(128,"Total_acc_Y"),1:128, sep=""),paste(replicate(128,"Total_acc_Z"),1:128, sep=""))#naming the columns
+paste(replicate(128,"Body_acc_Y"),1:128, sep=""),paste(replicate(128,"Body_acc_Z"),1:128, sep=""),
+paste(replicate(128,"Body_gyro_X"),1:128, sep=""),paste(replicate(128,"Body_gyro_Y"),1:128, sep=""),
+paste(replicate(128,"Body_gyro_Z"),1:128, sep=""),paste(replicate(128,"Total_acc_X"),1:128, sep=""),
+paste(replicate(128,"Total_acc_Y"),1:128, sep=""),paste(replicate(128,"Total_acc_Z"),1:128, sep=""))#naming the columns
 dataframe_final<-tbl_df(dataframe_final)
 activity_label<-read.table("activity_labels.txt")
 dataframe_final<-mutate(dataframe_final, activity=activity_label[activity,2])#putting labels to the columns
-##Part2: Collecting the features from the train and test sets
+dataframe_final
+```
+
+The variable "Body_acc_gravityXYZ"" is obtained by substracting the variable "Body_accXYZ"" from the variable "Total_accXYZ". The variable Body_gyroXYZ is the measurement we get from the gyroscope. By manipulating these three variables ("Body_acc_gravityXYZ"", "BodygyroXYZ", "Body_accXYZ"") with the angular velocity signals, we extract the set of features described in the file "features.txt". For instance, the feature "tBody-acc_(mean)-XYZ"" is obtained by computing the mean over all the 128 variables "(tBody-acc-(mean)-XYZ)"" shown in the dataframe above.
+
+##Part2
+
+In this part we will try to collect all the features data from both the train and test sets. Then we will attribute to each suject for each activity the corresponding features. We will reproduce the same kind of code steps that we 
+have performed in part 1.
+
+```{r, include=TRUE}
 X_test<-tbl_df(read.table("C:/Users/HP/downloads/getdata_projectfiles_UCI HAR Dataset/UCI HAR Dataset/test/X_test.txt"))
 X_test_subject<-tbl_df(read.table("C:/Users/HP/downloads/getdata_projectfiles_UCI HAR Dataset/UCI HAR Dataset/test/subject_test.txt"))
 X_test_activity<-tbl_df(read.table("C:/Users/HP/downloads/getdata_projectfiles_UCI HAR Dataset/UCI HAR Dataset/test/y_test.txt"))
@@ -38,16 +57,40 @@ X_train_subject<-tbl_df(read.table("C:/Users/HP/downloads/getdata_projectfiles_U
 X_train_activity<-tbl_df(read.table("C:/Users/HP/downloads/getdata_projectfiles_UCI HAR Dataset/UCI HAR Dataset/train/y_train.txt",header=FALSE))
 X_train_final<-cbind.data.frame(X_train_subject,X_train_activity,X_train)
 X_subject_activity<-rbind.data.frame(X_train_final,X_test_final)
-##Part3: naming the dataframe and extracting the pertinent features
+str(X_subject_activity)
+```
+
+
+##Part3
+In this section we will attribute to our dataframe its column names which are "subject", "activity" and the features labels in "features.txt".
+Then we extract the features that compute the mean and the std of the measurments. We do this, by looking for the terms "mean", "Mean" and "std" in the features labels'.
+
+```{r , include=TRUE}
 features<-read.table("features.txt",sep=" ",header=FALSE)#reading the features labels
 features<-paste(features[,2], features[,1], sep="")
 names(X_subject_activity)<-c("subject","activity",as.character(unique(features)))# attributing columnnames to the dataframe
 X_subject_activity<-tbl_df(X_subject_activity)
 X_subject_activity<-select(X_subject_activity,subject,activity,grep("mean", names(X_subject_activity)),grep("Mean",names(X_subject_activity)),grep("std", names(X_subject_activity)))#looking for the key terms to extract the data
-##Part4: Attributing labels to the activity
+X_subject_activity
+```
+We get a 10299*88 dataframe with its attributed names, after having extracted the appropriate features.
+
+##Part4
+
+In this part we will match each activity symbols (1,2,3,4,5,6) with its labels in the file "activity_labels.txt".
+```{r , include=TRUE}
 activity_label<-read.table("activity_labels.txt")
 X_subject_activity<-mutate(X_subject_activity, activity=activity_label[activity,2])
-##Part5: Getting a tidy data
+X_subject_activity
+```
+We can see the term "standing" that appears instead of the symbol "5" shown in the previous dataframe.
+
+## Part5
+
+In this last part we will proceed to the final step of the process of cleaning data. That is we will try to match for each subject belonging to the 30 volunteers and each activity in the six possible activities, the mean of the extracted features. We expect 
+to get a dataframe with 180 rows and 88 columns.
+
+```{r , include=TRUE}
 Gr_by<-group_by(X_subject_activity,subject,activity)#grouping the data by subject and activity
 List<-list()
 for (i in 3:88){
@@ -56,6 +99,6 @@ names(Gr_by)[[i]]<-"h"  # h is a temporary variable that we use only in the #fun
 List[[i-2]]<-as.data.frame(summarize(Gr_by, mean(h)))
 names(Gr_by)[[i]]<-name#we reattribute to the dataframe its true name
 names(List[[i-2]])<-c("subject","activity",names(Gr_by[,i]))}
-tidy_data<-join_all(List)
-write.table(tidy_data,"tidy_table.txt", sep=" ")
-
+tidy_data<-join_all(List)#we join all the dataframes by subject and activity
+tbl_df(tidy_data)
+```
