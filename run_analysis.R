@@ -57,5 +57,5 @@ List[[i-2]]<-as.data.frame(summarize(Gr_by, mean(h)))
 names(Gr_by)[[i]]<-name#we reattribute to the dataframe its true name
 names(List[[i-2]])<-c("subject","activity",names(Gr_by[,i]))}
 tidy_data<-join_all(List)
-write.table(tidy_data,"tidy_table.txt", sep=" ")
+write.table(tidy_data,"tidy_table.txt", row.name=FALSE,sep=" ")
 
